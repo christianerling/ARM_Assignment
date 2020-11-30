@@ -81,12 +81,13 @@ covid_19_column_selection['date'] = covid_19_column_selection['date'].map(dt.dat
 # Pivot the Location Column
 transformed_col = pd.get_dummies(covid_19_column_selection[covid_19_column_selection["location"].isin(eu_countries)])
 t1 = time()
-
 # Make an instance and perform the imputation
 imputer = MissForest(verbose=1, max_iter=15)
 # Impute Missing Values
 covid_19_values_imputed = pd.DataFrame(imputer.fit_transform(transformed_col), columns=transformed_col.columns.tolist())
 t2 = time()
+# Delete Rows with Poverty Measurement over 1
+covid_19_values_imputed = covid_19_values_imputed[covid_19_values_imputed["extreme_poverty"] < 1]
 print()
 print(f"Execution Time for Imputation {timedelta(seconds=(t2 - t1))}")
 
