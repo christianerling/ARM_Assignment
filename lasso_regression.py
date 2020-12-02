@@ -7,11 +7,18 @@ from sklearn import linear_model
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import KFold
 
+def percentage_error(actual, predicted):
+    res = np.empty(actual.shape)
+    for j in range(actual.shape[0]):
+        if actual[j] != 0:
+            res[j] = (actual[j] - predicted[j]) / actual[j]
+        else:
+            res[j] = predicted[j] / np.mean(actual)
+    return res
 
-# TODO correct the error for zero division
+
 def mean_absolute_percentage_error(y_true, y_pred):
-    y_true, y_pred = np.array(y_true), np.array(y_pred)
-    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+    return np.mean(np.abs(percentage_error(np.asarray(y_true), np.asarray(y_pred)))) * 100
 
 
 # # Generate alpha score list between 0.01 and 1
@@ -60,7 +67,6 @@ kf = KFold(n_splits=25, random_state=True, shuffle=True)
 eval_results = []
 for train_index, test_index in kf.split(x_data):
     t1 = time()
-    print("TRAIN:", train_index, "TEST:", test_index)
     X_train, X_test = x_data.iloc[train_index], x_data.iloc[test_index]
     y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
     lm = linear_model.Lasso(alpha=86.65367653676537)
