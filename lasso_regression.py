@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn import linear_model
+import seaborn as sns
 from sklearn.model_selection import GridSearchCV
 # Generate alpha score list between 0.01 and 1
 alpha_scores = list(np.linspace(0.01, 1, 100))
@@ -36,9 +37,14 @@ grid_search_scores_lasso = pd.DataFrame(
 )
 grid_search_scores_lasso.to_excel("data/lasso_grid_search_results.xlsx")
 
-plt.plot(param_alphas, mean_score)
+grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
+
+grid_search_scores_lasso_filtered = grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
+plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
+         label="LASSO Regression")
 plt.xlabel("Alpha")
-plt.ylim(0, 1)
-plt.ylabel("Mean R^2 Score")
+plt.ylim(0.869, 0.8725)
+plt.ylabel("Mean R\u00b2 Score")
+plt.legend(loc="upper right",frameon=False)
 plt.savefig("data/lasso_grid_search_results.png")
 plt.show()
