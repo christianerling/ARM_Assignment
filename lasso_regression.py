@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 from sklearn import linear_model
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import KFold
+from sklearn.model_selection import ShuffleSplit
+
 
 def percentage_error(actual, predicted):
     res = np.empty(actual.shape)
@@ -63,22 +64,30 @@ plt.legend(loc="upper right", frameon=False)
 plt.savefig("data/lasso_grid_search_results.png")
 plt.show()
 
-kf = KFold(n_splits=25, random_state=True, shuffle=True)
-eval_results = []
-for train_index, test_index in kf.split(x_data):
+mean_result = []
+for i in range(25):
+    cv_result = []
+    indices = []
     t1 = time()
-    X_train, X_test = x_data.iloc[train_index], x_data.iloc[test_index]
-    y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
-    lm = linear_model.Lasso(alpha=86.65367653676537)
-    lm.fit(X_train, y_train)
-    y_pred = lm.predict(X_test)
-    r2 = r2_score(y_test, y_pred)
-    mse = mean_squared_error(y_test, y_pred)
-    rmse = mean_squared_error(y_test, y_pred, squared=False)
-    mae = mean_absolute_error(y_test, y_pred)
-    mape = mean_absolute_percentage_error(y_test, y_pred)
+    s_split = ShuffleSplit(n_splits=5,test_size=0.2, train_size=0.8)
+    for train_index, test_index in s_split.split(x_data):
+        indices.append([train_index, test_index])
+        X_train, X_test = x_data.iloc[train_index], x_data.iloc[test_index]
+        y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
+        lm = linear_model.Lasso(alpha=86.65367653676537)
+        lm.fit(X_train, y_train)
+        y_pred = lm.predict(X_test)
+        r2 = r2_score(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = mean_squared_error(y_test, y_pred, squared=False)
+        mae = mean_absolute_error(y_test, y_pred)
+        mape = mean_absolute_percentage_error(y_test, y_pred)
+        cv_result.append([r2, mse, rmse, mae, mape])
     t2 = time()
-    eval_results.append([r2, mse, rmse, mae, mape, t2 - t1])
+    print(indices)
+    means = list(np.mean(np.array(cv_result), axis=0))
+    means.append(t2 - t1)
+    mean_result.append(means)
 
-pd.DataFrame(eval_results, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
+pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
     "data/lasso_cv_run.xlsx")
