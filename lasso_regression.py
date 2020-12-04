@@ -1,11 +1,11 @@
 from time import time
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn import linear_model
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
+from tqdm import tqdm
 
 
 def percentage_error(actual, predicted):
@@ -52,41 +52,39 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # )
 # grid_search_scores_lasso.to_excel("data/lasso_grid_search_results.xlsx")
 
-grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
+# grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
+#
+# grid_search_scores_lasso_filtered = grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
+# plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
+#          label="LASSO Regression")
+# plt.xlabel("Alpha")
+# plt.ylim(0.869, 0.8725)
+# plt.ylabel("Mean R\u00b2 Score")
+# plt.legend(loc="upper right", frameon=False)
+# plt.savefig("data/lasso_grid_search_results.png")
+# plt.show()
 
-grid_search_scores_lasso_filtered = grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
-plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
-         label="LASSO Regression")
-plt.xlabel("Alpha")
-plt.ylim(0.869, 0.8725)
-plt.ylabel("Mean R\u00b2 Score")
-plt.legend(loc="upper right", frameon=False)
-plt.savefig("data/lasso_grid_search_results.png")
-plt.show()
-
+lm = linear_model.Lasso(alpha=86.65367653676537)
 mean_result = []
-for i in range(25):
+for i in tqdm(range(1200)):
     cv_result = []
     indices = []
-    t1 = time()
-    s_split = ShuffleSplit(n_splits=5,test_size=0.2, train_size=0.8)
+    s_split = ShuffleSplit(n_splits=5, test_size=0.2, train_size=0.8)
     for train_index, test_index in s_split.split(x_data):
         indices.append([train_index, test_index])
         X_train, X_test = x_data.iloc[train_index], x_data.iloc[test_index]
         y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
-        lm = linear_model.Lasso(alpha=86.65367653676537)
+        t1 = time()
         lm.fit(X_train, y_train)
         y_pred = lm.predict(X_test)
+        t2 = time()
         r2 = r2_score(y_test, y_pred)
         mse = mean_squared_error(y_test, y_pred)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
         mae = mean_absolute_error(y_test, y_pred)
         mape = mean_absolute_percentage_error(y_test, y_pred)
-        cv_result.append([r2, mse, rmse, mae, mape])
-    t2 = time()
-    print(indices)
+        cv_result.append([r2, mse, rmse, mae, mape, t2 - t1])
     means = list(np.mean(np.array(cv_result), axis=0))
-    means.append(t2 - t1)
     mean_result.append(means)
 
 pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(

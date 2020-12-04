@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
@@ -89,30 +90,29 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # print(f"\n\nExecution Time {timedelta(seconds=t2 - t1)}")
 
 mean_result = []
-for i in range(25):
+lm = lgb.LGBMRegressor(bagging_fraction=0.9404, feature_fraction=0.3161, max_depth=int(18.21),
+                       min_child_weight=17.38, min_split_gain=0.03066, num_leaves=int(94.24),
+                       application="regression", num_iterations=200, learning_rate=0.05, metric='lgb_r2_score',
+                       device="cpu", n_jobs=-1)
+for i in tqdm(range(1200)):
     cv_result = []
     indices = []
-    t1 = time()
     s_split = ShuffleSplit(n_splits=5, test_size=0.2, train_size=0.8)
     for train_index, test_index in s_split.split(x_data):
         indices.append([train_index, test_index])
         X_train, X_test = x_data.iloc[train_index], x_data.iloc[test_index]
         y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
-        lm = lgb.LGBMRegressor(bagging_fraction=0.9404, feature_fraction=0.3161, max_depth=int(18.21),
-                               min_child_weight=17.38, min_split_gain=0.03066, num_leaves=int(94.24),
-                               application="regression", num_iterations=200, learning_rate=0.05, metric='lgb_r2_score')
+        t1 = time()
         lm.fit(X_train, y_train)
         y_pred = lm.predict(X_test)
+        t2 = time()
         r2 = r2_score(y_test, y_pred)
         mse = mean_squared_error(y_test, y_pred)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
         mae = mean_absolute_error(y_test, y_pred)
         mape = mean_absolute_percentage_error(y_test, y_pred)
-        cv_result.append([r2, mse, rmse, mae, mape])
-    t2 = time()
-    print(indices)
+        cv_result.append([r2, mse, rmse, mae, mape, t2 - t1])
     means = list(np.mean(np.array(cv_result), axis=0))
-    means.append(t2 - t1)
     mean_result.append(means)
 
 pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
