@@ -29,6 +29,18 @@ data_preprocessed = pd.read_json("data/owi-covid-values_imputed.json")
 x_data = data_preprocessed.loc[:, data_preprocessed.columns != "new_deaths_smoothed"]
 y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoothed"]
 
+# Convert the pivot columns for the location back to location column i.o. to speed up the execution on GPU
+eu_countries = ["Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Denmark", "Estonia",
+                "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", "Luxembourg",
+                "Lithuania", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovenia",
+                "Spain", "Sweden", "United Kingdom"]
+eu_countries = list(map(lambda x: "location_" + str(x), eu_countries))
+original_back = list(data_preprocessed[eu_countries].idxmax(axis=1))
+original_back = list(map(lambda x: x.replace("location_", ""), original_back))
+
+data_preprocessed = data_preprocessed.drop(eu_countries, axis=1)
+data_preprocessed["location"] = original_back
+data_preprocessed["location"] = data_preprocessed["location"].astype('category')
 # t1 = time()
 #
 #
@@ -90,10 +102,11 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # print(f"\n\nExecution Time {timedelta(seconds=t2 - t1)}")
 
 mean_result = []
+# max_bin=63 add below if device is GPU
 lm = lgb.LGBMRegressor(bagging_fraction=0.9404, feature_fraction=0.3161, max_depth=int(18.21),
                        min_child_weight=17.38, min_split_gain=0.03066, num_leaves=int(94.24),
                        application="regression", num_iterations=200, learning_rate=0.05, metric='lgb_r2_score',
-                       device="cpu", n_jobs=-1)
+                       device="cpu", n_jobs=-1, gpu_use_dp=False, categorical_column=24)
 for i in tqdm(range(1200)):
     cv_result = []
     indices = []
