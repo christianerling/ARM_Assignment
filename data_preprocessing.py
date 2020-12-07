@@ -82,7 +82,7 @@ covid_19_column_selection['date'] = covid_19_column_selection['date'].map(dt.dat
 transformed_col = pd.get_dummies(covid_19_column_selection[covid_19_column_selection["location"].isin(eu_countries)])
 t1 = time()
 # Make an instance and perform the imputation
-imputer = MissForest(verbose=1, max_iter=15)
+imputer = MissForest(verbose=1, max_iter=15, n_jobs=-1)
 # Impute Missing Values
 covid_19_values_imputed = pd.DataFrame(imputer.fit_transform(transformed_col), columns=transformed_col.columns.tolist())
 t2 = time()
@@ -94,3 +94,18 @@ print(f"Execution Time for Imputation {timedelta(seconds=(t2 - t1))}")
 # Export the Files for Analysis
 covid_19_values_imputed.to_excel("data/owi-covid-values_imputed.xlsx")
 covid_19_values_imputed.to_json("data/owi-covid-values_imputed.json")
+
+# Now for every country on the world
+t1 = time()
+# Transform columns with all countries selected
+transformed_col = pd.get_dummies(covid_19_column_selection[~covid_19_column_selection["location"].isin(["World"])])
+covid_19_values_imputed = pd.DataFrame(imputer.fit_transform(transformed_col), columns=transformed_col.columns.tolist())
+t2 = time()
+# Delete Rows with Poverty Measurement over 1
+covid_19_values_imputed = covid_19_values_imputed[covid_19_values_imputed["extreme_poverty"] < 1]
+print()
+print(f"Execution Time for Imputation {timedelta(seconds=(t2 - t1))}")
+
+# Export the Files for Analysis
+covid_19_values_imputed.to_excel("data/owi-covid-values_imputed_all_countries.xlsx")
+covid_19_values_imputed.to_json("data/owi-covid-values_imputed_all_countries.json")
