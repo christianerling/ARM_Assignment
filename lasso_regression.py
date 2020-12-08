@@ -1,10 +1,12 @@
+from datetime import timedelta
 from time import time
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn import linear_model
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import GridSearchCV, ShuffleSplit
 from tqdm import tqdm
 
 
@@ -23,14 +25,14 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 
 # # Generate alpha score list between 0.01 and 1
-alpha_scores = list(np.linspace(0.01, 1, 100))
+alpha_scores = []  # list(np.linspace(0.01, 1, 100))
 # Add scores between 1 and 25
 alpha_scores.extend(list(np.linspace(1, 100, 100000)))
 lasso_params = {'alpha': alpha_scores}
 data_preprocessed = pd.read_json("data/owi-covid-values_imputed.json")
 x_data = data_preprocessed.loc[:, data_preprocessed.columns != "new_deaths_smoothed"]
 y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoothed"]
-#
+
 # t1 = time()
 # # Activate with Multiprocessing, params, and 5 fold CV
 # lasso_grid_search_cv = GridSearchCV(linear_model.Lasso(), param_grid=lasso_params, n_jobs=-1, cv=5, verbose=1)
@@ -54,17 +56,17 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 
 # grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
 #
-# grid_search_scores_lasso_filtered = grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
+# grid_search_scores_lasso_filtered = grid_search_scores_lasso #grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
 # plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
 #          label="LASSO Regression")
 # plt.xlabel("Alpha")
-# plt.ylim(0.869, 0.8725)
+# plt.ylim(0.86, 0.90)
 # plt.ylabel("Mean R\u00b2 Score")
 # plt.legend(loc="upper right", frameon=False)
 # plt.savefig("data/lasso_grid_search_results.png")
 # plt.show()
 
-lm = linear_model.Lasso(alpha=86.65367653676537)
+lm = linear_model.Lasso(alpha= 50.78660786607866)
 mean_result = []
 for i in tqdm(range(1200)):
     cv_result = []

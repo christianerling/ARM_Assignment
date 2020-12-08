@@ -71,7 +71,7 @@ na_columns = ["icu_patients", "hosp_patients", "tests_per_case", "positive_rate"
 
 eu_countries = ["Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Denmark", "Estonia",
                 "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", "Luxembourg",
-                "Lithuania", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovak Republic", "Slovenia",
+                "Lithuania", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia",
                 "Spain", "Sweden", "United Kingdom"]
 # drop columns with more than 50% missing values
 covid_19_column_selection = covid_19_column_selection.dropna(thresh=len(covid_19_column_selection) * 0.5, axis=1)
@@ -96,16 +96,16 @@ covid_19_values_imputed.to_excel("data/owi-covid-values_imputed.xlsx")
 covid_19_values_imputed.to_json("data/owi-covid-values_imputed.json")
 
 # Now for every country on the world
-t1 = time()
-# Transform columns with all countries selected
-transformed_col = pd.get_dummies(covid_19_column_selection[~covid_19_column_selection["location"].isin(["World"])])
-covid_19_values_imputed = pd.DataFrame(imputer.fit_transform(transformed_col), columns=transformed_col.columns.tolist())
-t2 = time()
-# Delete Rows with Poverty Measurement over 1
-covid_19_values_imputed = covid_19_values_imputed[covid_19_values_imputed["extreme_poverty"] < 1]
-print()
-print(f"Execution Time for Imputation {timedelta(seconds=(t2 - t1))}")
-
-# Export the Files for Analysis
-covid_19_values_imputed.to_excel("data/owi-covid-values_imputed_all_countries.xlsx")
-covid_19_values_imputed.to_json("data/owi-covid-values_imputed_all_countries.json")
+# t1 = time()
+# # Transform columns with all countries selected
+# transformed_col = pd.get_dummies(covid_19_column_selection[~covid_19_column_selection["location"].isin(["World"])])
+# covid_19_values_imputed = pd.DataFrame(imputer.fit_transform(transformed_col), columns=transformed_col.columns.tolist())
+# t2 = time()
+# # Delete Rows with Poverty Measurement over 1
+# covid_19_values_imputed = covid_19_values_imputed[covid_19_values_imputed["extreme_poverty"] < 1]
+# print()
+# print(f"Execution Time for Imputation {timedelta(seconds=(t2 - t1))}")
+#
+# # Export the Files for Analysis
+# covid_19_values_imputed.to_excel("data/owi-covid-values_imputed_all_countries.xlsx")
+# covid_19_values_imputed.to_json("data/owi-covid-values_imputed_all_countries.json")

@@ -1,10 +1,11 @@
+from datetime import timedelta
 from time import time
 
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV
 from tqdm import tqdm
 
 
@@ -22,17 +23,17 @@ def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs(percentage_error(np.asarray(y_true), np.asarray(y_pred)))) * 100
 
 
-# # Generate alpha score list between 0.01 and 1
-xgboost_params = {
-    'eta': [0.01, 0.015, 0.025, 0.05, 0.1],
-    'subsample': [i / 10.0 for i in range(6, 10)],
-    'colsample_bytree': [i / 10.0 for i in range(6, 10)],
-    'reg_lambda': [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 1.0],
-    'gamma': [i / 10.0 for i in range(0, 5)],
-    'reg_alpha': [0, 0.1, 0.5, 1.0],
-    'max_depth': [3, 5, 7, 9, 12, 15, 17, 25],
-    'min_child_weight': [6, 8, 10, 12],
-    'verbosity': [0]}
+# # # Generate alpha score list between 0.01 and 1
+# xgboost_params = {
+#     'eta': [0.01, 0.015, 0.025, 0.05, 0.1],
+#     'subsample': [i / 10.0 for i in range(6, 10)],
+#     'colsample_bytree': [i / 10.0 for i in range(6, 10)],
+#     'reg_lambda': [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 1.0],
+#     'gamma': [i / 10.0 for i in range(0, 5)],
+#     'reg_alpha': [0, 0.1, 0.5, 1.0],
+#     'max_depth': [3, 5, 7, 9, 12, 15, 17, 25],
+#     'min_child_weight': [6, 8, 10, 12],
+#     'verbosity': [0]}
 data_preprocessed = pd.read_json("data/owi-covid-values_imputed.json")
 x_data = data_preprocessed.loc[:, data_preprocessed.columns != "new_deaths_smoothed"]
 y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoothed"]
@@ -40,10 +41,10 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # t1 = time()
 # # Activate with Multiprocessing, params, and 5 fold CV
 #
-# xgboost_grid_search_cv = RandomizedSearchCV(xgb.XGBRegressor(predictor="auto", tree_method="gpu_hist", nthread=-1),
+# xgboost_grid_search_cv = RandomizedSearchCV(xgb.XGBRegressor(predictor="auto", nthread=-1),
 #                                             param_distributions=xgboost_params,
 #                                             cv=5,
-#                                             verbose=1, n_jobs=-1, n_iter=1000)
+#                                             verbose=1, n_jobs=-1, n_iter=2000)
 # xgboost_grid_search_cv.fit(x_data, y_data)
 # t2 = time()
 # print("\n\n")
@@ -83,9 +84,9 @@ grid_search_scores_xgboost = pd.read_excel("data/xgboost_grid_search_results.xls
 # plt.show()
 
 mean_result = []
-lm = xgb.XGBRegressor(predictor="auto", tree_method="gpu_hist", nthread=-1, verbosity=0, subsample=0.6,
+lm = xgb.XGBRegressor(predictor="auto", tree_method="gpu_hist", nthread=-1, verbosity=0, subsample=0.8,
                       min_child_weight=6,
-                      max_depth=3, reg_lambda=0.09, gamma=0.3, eta=0.05, colsample_bytree=0.9, reg_alpha=0.1)
+                      max_depth=3, reg_lambda=0.05, gamma=0.4, eta=0.05, colsample_bytree=0.9, reg_alpha=0.1)
 
 for i in tqdm(range(1200)):
     cv_result = []
