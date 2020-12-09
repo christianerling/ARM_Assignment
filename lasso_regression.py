@@ -1,4 +1,4 @@
-from datetime import timedelta
+from itertools import chain
 from time import time
 
 import matplotlib.pyplot as plt
@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn import linear_model
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import GridSearchCV, ShuffleSplit
+from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
 
 
@@ -54,20 +54,22 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # )
 # grid_search_scores_lasso.to_excel("data/lasso_grid_search_results.xlsx")
 
-# grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
-#
-# grid_search_scores_lasso_filtered = grid_search_scores_lasso #grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
-# plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
-#          label="LASSO Regression")
-# plt.xlabel("Alpha")
-# plt.ylim(0.86, 0.90)
-# plt.ylabel("Mean R\u00b2 Score")
-# plt.legend(loc="upper right", frameon=False)
-# plt.savefig("data/lasso_grid_search_results.png")
-# plt.show()
+grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
 
-lm = linear_model.Lasso(alpha= 50.78660786607866)
+grid_search_scores_lasso_filtered = grid_search_scores_lasso #grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
+plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
+         label="LASSO Regression")
+plt.xlabel("Alpha")
+plt.ylim(0.86, 0.90)
+plt.ylabel("Mean R\u00b2 Score")
+plt.legend(loc="upper right", frameon=False)
+plt.savefig("data/lasso_grid_search_results.png",dpi=250)
+plt.show()
+
+lm = linear_model.Lasso(alpha=50.78660786607866)
 mean_result = []
+predicted = []
+true_vals = []
 for i in tqdm(range(1200)):
     cv_result = []
     indices = []
@@ -80,6 +82,8 @@ for i in tqdm(range(1200)):
         lm.fit(X_train, y_train)
         y_pred = lm.predict(X_test)
         t2 = time()
+        predicted.append(y_pred.tolist())
+        true_vals.append(y_test["new_deaths_smoothed"].tolist())
         r2 = r2_score(y_test, y_pred)
         mse = mean_squared_error(y_test, y_pred)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
@@ -91,3 +95,15 @@ for i in tqdm(range(1200)):
 
 pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
     "data/lasso_cv_run.xlsx")
+
+predicted = list(chain.from_iterable(predicted))
+true_vals = list(chain.from_iterable(true_vals))
+
+fig, ax = plt.subplots()
+ax.scatter(true_vals, predicted, edgecolors=(0, 0, 0))
+ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--', lw=4, label="LASSO Regression")
+ax.set_xlabel("Measured")
+ax.set_ylabel("Predicted")
+plt.legend(loc="upper right", frameon=False)
+plt.savefig("data/lasso_cv_results.png",dpi=250)
+plt.show()

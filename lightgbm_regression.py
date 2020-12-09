@@ -1,14 +1,14 @@
 import warnings
-from datetime import timedelta
 from time import time
 
 import lightgbm as lgb
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from bayes_opt import BayesianOptimization
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
+from itertools import chain
 
 warnings.filterwarnings("ignore")
 
@@ -107,6 +107,8 @@ lm = lgb.LGBMRegressor(bagging_fraction=0.8167, feature_fraction=0.4551, max_dep
                        min_child_weight=15.77, min_split_gain=0.01314, num_leaves=int(98.33),
                        application="regression", num_iterations=200, learning_rate=0.05, metric='lgb_r2_score',
                        device="cpu", n_jobs=-1, gpu_use_dp=False, categorical_column=24)
+predicted = []
+true_vals = []
 for i in tqdm(range(1200)):
     cv_result = []
     indices = []
@@ -119,6 +121,8 @@ for i in tqdm(range(1200)):
         lm.fit(X_train, y_train)
         y_pred = lm.predict(X_test)
         t2 = time()
+        predicted.append(y_pred.tolist())
+        true_vals.append(y_test["new_deaths_smoothed"].tolist())
         r2 = r2_score(y_test, y_pred)
         mse = mean_squared_error(y_test, y_pred)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
@@ -130,3 +134,15 @@ for i in tqdm(range(1200)):
 
 pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
     "data/lightgbm_cv_run.xlsx")
+
+predicted = list(chain.from_iterable(predicted))
+true_vals = list(chain.from_iterable(true_vals))
+
+fig, ax = plt.subplots()
+ax.scatter(true_vals, predicted, edgecolors=(0, 0, 0))
+ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--', lw=4, label="LightGBM Regression")
+ax.set_xlabel("Measured")
+ax.set_ylabel("Predicted")
+plt.legend(loc="upper right", frameon=False)
+plt.savefig("data/lightgbm_cv_results.png",dpi=250)
+plt.show()

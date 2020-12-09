@@ -1,11 +1,12 @@
-from datetime import timedelta
+from itertools import chain
 from time import time
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV
+from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
 
 
@@ -88,6 +89,8 @@ lm = xgb.XGBRegressor(predictor="auto", tree_method="gpu_hist", nthread=-1, verb
                       min_child_weight=6,
                       max_depth=3, reg_lambda=0.05, gamma=0.4, eta=0.05, colsample_bytree=0.9, reg_alpha=0.1)
 
+predicted = []
+true_vals = []
 for i in tqdm(range(1200)):
     cv_result = []
     indices = []
@@ -100,6 +103,8 @@ for i in tqdm(range(1200)):
         lm.fit(X_train, y_train)
         y_pred = lm.predict(X_test)
         t2 = time()
+        predicted.append(y_pred.tolist())
+        true_vals.append(y_test["new_deaths_smoothed"].tolist())
         r2 = r2_score(y_test, y_pred)
         mse = mean_squared_error(y_test, y_pred)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
@@ -111,3 +116,15 @@ for i in tqdm(range(1200)):
 
 pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
     "data/xgboost_cv_run.xlsx")
+
+predicted = list(chain.from_iterable(predicted))
+true_vals = list(chain.from_iterable(true_vals))
+
+fig, ax = plt.subplots()
+ax.scatter(true_vals, predicted, edgecolors=(0, 0, 0))
+ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--', lw=4, label="XGBoost Regression")
+ax.set_xlabel("Measured")
+ax.set_ylabel("Predicted")
+plt.legend(loc="upper right", frameon=False)
+plt.savefig("data/xgboost_cv_results.png", dpi=250)
+plt.show()
