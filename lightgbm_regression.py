@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly
-import plotly.graph_objs as go
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
@@ -103,16 +105,35 @@ data_preprocessed["location"] = data_preprocessed["location"].astype('category')
 # t2 = time()
 # print(f"\n\nExecution Time {timedelta(seconds=t2 - t1)}")
 data = pd.read_excel("data/lightgbm_bayesian_optimization.xlsx")
-fig1 = go.Scatter3d(x=data.iloc[:, 7], y=data.iloc[:, 6], z=data.iloc[:, 1], line=dict(width=0.02))
-
-mylayout = go.Layout(scene=dict(xaxis=dict(title="num_leaves"),
-                                zaxis=dict(title="Mean R\u00b2 Score"),
-                                yaxis=dict(title="min_split_gain")), )
-plotly.offline.plot({"data": [fig1],
-                     "layout": mylayout},
-                    auto_open=True,
-                    filename=("data/lasso_grid_search_results.html"))
-
+fig = make_subplots(rows=1, cols=6,
+                    subplot_titles=["bagging_fraction", "feature_fraction", "max_depth", "min_child_weight",
+                                    "min_split_gain", "num_leaves"])
+fig.add_trace(
+    go.Scatter(x=data["bagging_fraction"], y=data["target"], mode='markers'),
+    row=1, col=1
+)
+fig.add_trace(
+    go.Scatter(x=data["feature_fraction"], y=data["target"], mode='markers'),
+    row=1, col=2
+)
+fig.add_trace(
+    go.Scatter(x=data["max_depth"], y=data["target"], mode='markers'),
+    row=1, col=3
+)
+fig.add_trace(
+    go.Scatter(x=data["min_child_weight"], y=data["target"], mode='markers'),
+    row=1, col=4
+)
+fig.add_trace(
+    go.Scatter(x=data["min_split_gain"], y=data["target"], mode='markers'),
+    row=1, col=5
+)
+fig.add_trace(
+    go.Scatter(x=data["num_leaves"], y=data["target"], mode='markers'),
+    row=1, col=6
+)
+fig.update_layout(height=600, width=1500, title_text="Hyperparameter for Target Variable R\u00b2")
+plotly.offline.plot(fig, filename='data/lightgbm_bayesian_optimization_result.html', auto_open=True)
 mean_result = []
 # max_bin=63 add below if device is GPU
 lm = lgb.LGBMRegressor(bagging_fraction=0.8167, feature_fraction=0.4551, max_depth=int(24.41),

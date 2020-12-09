@@ -4,10 +4,13 @@ from time import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly
 import xgboost as xgb
+from plotly.subplots import make_subplots
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
+import plotly.graph_objects as go
 
 
 def percentage_error(actual, predicted):
@@ -74,6 +77,44 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # grid_search_scores_xgboost.to_excel("data/xgboost_grid_search_results.xlsx")
 
 grid_search_scores_xgboost = pd.read_excel("data/xgboost_grid_search_results.xlsx")
+fig = make_subplots(rows=1, cols=8,
+                    subplot_titles=["subsample", "min_child_weight", "max_depth", "lambda",
+                                    "gamma", "eta","colsample_bytree","alpha"])
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_subsample"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=1
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_min_child_weight"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=2
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_max_depth"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=3
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_lambda"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=4
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_gamma"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=5
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_eta"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=6
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["colsample_bytrees"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=7
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_alpha"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    row=1, col=8
+)
+
+fig.update_layout(height=600, width=2000, title_text="Hyperparameter for Target Variable R\u00b2")
+plotly.offline.plot(fig, filename='data/xgboost_grid_search_results.html', auto_open=True)
 
 # plt.plot(grid_search_scores_xgboost["param_alphas"], grid_search_scores_xgboost["mean_score"],
 #          label="LASSO Regression")
