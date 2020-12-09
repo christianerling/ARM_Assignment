@@ -1,14 +1,16 @@
 import warnings
+from itertools import chain
 from time import time
 
 import lightgbm as lgb
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly
+import plotly.graph_objs as go
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
-from itertools import chain
 
 warnings.filterwarnings("ignore")
 
@@ -100,6 +102,16 @@ data_preprocessed["location"] = data_preprocessed["location"].astype('category')
 # bayesion_opt_lgbm(x_data, y_data, init_iter=10, n_iters=200, random_state=77, seed=101, num_iterations=400)
 # t2 = time()
 # print(f"\n\nExecution Time {timedelta(seconds=t2 - t1)}")
+data = pd.read_excel("data/lightgbm_bayesian_optimization.xlsx")
+fig1 = go.Scatter3d(x=data.iloc[:, 7], y=data.iloc[:, 6], z=data.iloc[:, 1], line=dict(width=0.02))
+
+mylayout = go.Layout(scene=dict(xaxis=dict(title="num_leaves"),
+                                zaxis=dict(title="Mean R\u00b2 Score"),
+                                yaxis=dict(title="min_split_gain")), )
+plotly.offline.plot({"data": [fig1],
+                     "layout": mylayout},
+                    auto_open=True,
+                    filename=("data/lasso_grid_search_results.html"))
 
 mean_result = []
 # max_bin=63 add below if device is GPU
@@ -144,5 +156,5 @@ ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--
 ax.set_xlabel("Measured")
 ax.set_ylabel("Predicted")
 plt.legend(loc="upper right", frameon=False)
-plt.savefig("data/lightgbm_cv_results.png",dpi=250)
+plt.savefig("data/lightgbm_cv_results.png", dpi=250)
 plt.show()
