@@ -81,15 +81,15 @@ fig = make_subplots(rows=1, cols=8,
                     subplot_titles=["subsample", "min_child_weight", "max_depth", "lambda",
                                     "gamma", "eta","colsample_bytree","alpha"])
 fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["param_subsample"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    go.Box(x=grid_search_scores_xgboost["param_subsample"], y=grid_search_scores_xgboost["mean_score"]),
     row=1, col=1
 )
 fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["param_min_child_weight"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    go.Box(x=grid_search_scores_xgboost["param_min_child_weight"], y=grid_search_scores_xgboost["mean_score"]),
     row=1, col=2
 )
 fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["param_max_depth"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    go.Box(x=grid_search_scores_xgboost["param_max_depth"], y=grid_search_scores_xgboost["mean_score"]),
     row=1, col=3
 )
 fig.add_trace(
@@ -97,19 +97,19 @@ fig.add_trace(
     row=1, col=4
 )
 fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["param_gamma"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    go.Box(x=grid_search_scores_xgboost["param_gamma"], y=grid_search_scores_xgboost["mean_score"]),
     row=1, col=5
 )
 fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["param_eta"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    go.Box(x=grid_search_scores_xgboost["param_eta"], y=grid_search_scores_xgboost["mean_score"]),
     row=1, col=6
 )
 fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["colsample_bytrees"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    go.Box(x=grid_search_scores_xgboost["colsample_bytrees"], y=grid_search_scores_xgboost["mean_score"]),
     row=1, col=7
 )
 fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["param_alpha"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
+    go.Box(x=grid_search_scores_xgboost["param_alpha"], y=grid_search_scores_xgboost["mean_score"]),
     row=1, col=8
 )
 
