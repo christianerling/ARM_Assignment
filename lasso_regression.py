@@ -90,6 +90,7 @@ for i in tqdm(range(1200)):
         # imp_coef = pd.DataFrame(coef).reset_index()
         # imp_coef.columns = ["Feature", "Value"]
         # imp_coef["Value"] = imp_coef["Value"].abs()
+        # imp_coef["Value"] = imp_coef["Value"].apply(lambda x: x / imp_coef["Value"].sum())
         # imp_coef = imp_coef.sort_values(by="Value", ascending=False)
         # plt.figure(figsize=(20, 10))
         # sns.barplot(x="Value", y="Feature", data=imp_coef)
