@@ -16,16 +16,12 @@ col_selection = ["location"
     , "total_cases"
     , "new_cases"
     , "new_cases_smoothed"
-    , "total_deaths"
-    , "new_deaths"
     , "new_deaths_smoothed"
     , "reproduction_rate"
     , "icu_patients"
     , "hosp_patients"
     , "new_tests"
     , "new_tests_smoothed"
-    , "new_tests_per_thousand"
-    , "new_tests_smoothed_per_thousand"
     , "tests_per_case"
     , "positive_rate"
     , "stringency_index"
@@ -73,17 +69,19 @@ eu_countries = ["Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Re
                 "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", "Luxembourg",
                 "Lithuania", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia",
                 "Spain", "Sweden", "United Kingdom"]
-# drop columns with more than 50% missing values
-covid_19_column_selection = covid_19_column_selection.dropna(thresh=len(covid_19_column_selection) * 0.5, axis=1)
+# drop columns with more than 50% missing values and not in EU country
+covid_19_column_selection = covid_19_column_selection[covid_19_column_selection["location"].isin(eu_countries)]
+covid_19_column_selection = covid_19_column_selection.dropna(
+    thresh=len(covid_19_column_selection) * 0.5, axis=1)
 # convert column to integer
 covid_19_column_selection["date"] = pd.to_datetime(covid_19_column_selection["date"])
 covid_19_column_selection['date'] = covid_19_column_selection['date'].map(dt.datetime.toordinal)
 # Pivot the Location Column
-transformed_col = pd.get_dummies(covid_19_column_selection[covid_19_column_selection["location"].isin(eu_countries)])
+transformed_col = pd.get_dummies(covid_19_column_selection)
 t1 = time()
 # Make an instance and perform the imputation
 imputer = MissForest(verbose=1, max_iter=15, n_jobs=-1)
-# Impute Missing Values
+# Impute Missing Values9
 covid_19_values_imputed = pd.DataFrame(imputer.fit_transform(transformed_col), columns=transformed_col.columns.tolist())
 t2 = time()
 # Delete Rows with Poverty Measurement over 1

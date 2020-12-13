@@ -1,11 +1,14 @@
+import warnings
 from itertools import chain
 from time import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from sklearn import linear_model
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
 
@@ -24,10 +27,10 @@ def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs(percentage_error(np.asarray(y_true), np.asarray(y_pred)))) * 100
 
 
-# # Generate alpha score list between 0.01 and 1
+# # # Generate alpha score list between 0.01 and 1
 alpha_scores = []  # list(np.linspace(0.01, 1, 100))
-# Add scores between 1 and 25
-alpha_scores.extend(list(np.linspace(1, 100, 100000)))
+# # Add scores between 1 and 25
+alpha_scores.extend(list(np.linspace(0, 200, 20000)))
 lasso_params = {'alpha': alpha_scores}
 data_preprocessed = pd.read_json("data/owi-covid-values_imputed.json")
 x_data = data_preprocessed.loc[:, data_preprocessed.columns != "new_deaths_smoothed"]
@@ -54,19 +57,20 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # )
 # grid_search_scores_lasso.to_excel("data/lasso_grid_search_results.xlsx")
 
-grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
+# grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
+#
+# grid_search_scores_lasso_filtered = grid_search_scores_lasso  # grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
+# plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
+#          label="LASSO Regression")
+# plt.xlabel("Alpha")
+# plt.ylim(0.25, 1.0)
+# plt.xlim(0, 10)
+# plt.ylabel("Mean R\u00b2 Score")
+# plt.legend(loc="upper right", frameon=False)
+# plt.savefig("data/lasso_grid_search_results.png", dpi=250)
+# plt.show()
 
-grid_search_scores_lasso_filtered = grid_search_scores_lasso #grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
-plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
-         label="LASSO Regression")
-plt.xlabel("Alpha")
-plt.ylim(0.86, 0.90)
-plt.ylabel("Mean R\u00b2 Score")
-plt.legend(loc="upper right", frameon=False)
-plt.savefig("data/lasso_grid_search_results.png",dpi=250)
-plt.show()
-
-lm = linear_model.Lasso(alpha=50.78660786607866)
+lm = linear_model.Lasso(alpha=0.01000050002500125)
 mean_result = []
 predicted = []
 true_vals = []
@@ -79,8 +83,23 @@ for i in tqdm(range(1200)):
         X_train, X_test = x_data.iloc[train_index], x_data.iloc[test_index]
         y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
         t1 = time()
-        lm.fit(X_train, y_train)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ConvergenceWarning)
+            lm.fit(X_train, y_train)
+        # coef = pd.Series(lm.coef_, index=x_data.columns)
+        # imp_coef = pd.DataFrame(coef).reset_index()
+        # imp_coef.columns = ["Feature", "Value"]
+        # imp_coef["Value"] = imp_coef["Value"].abs()
+        # imp_coef = imp_coef.sort_values(by="Value", ascending=False)
+        # plt.figure(figsize=(20, 10))
+        # sns.barplot(x="Value", y="Feature", data=imp_coef)
+        # plt.title('LASSO Features (avg over folds)')
+        # plt.tight_layout()
+        # plt.savefig('lasso_importances-01.png', dpi=200)
+        # plt.show()
         y_pred = lm.predict(X_test)
+        # for i, v in enumerate(importance):
+        #     print('Feature: %0d, Score: %.5f' % (i, v))
         t2 = time()
         predicted.append(y_pred.tolist())
         true_vals.append(y_test["new_deaths_smoothed"].tolist())
@@ -101,9 +120,10 @@ true_vals = list(chain.from_iterable(true_vals))
 
 fig, ax = plt.subplots()
 ax.scatter(true_vals, predicted, edgecolors=(0, 0, 0))
-ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--', lw=4, label="LASSO Regression")
+ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--', lw=4, label="Real Values")
 ax.set_xlabel("Measured")
 ax.set_ylabel("Predicted")
+fig.suptitle('LASSO Regression', fontsize=16)
 plt.legend(loc="upper right", frameon=False)
-plt.savefig("data/lasso_cv_results.png",dpi=250)
+plt.savefig("data/lasso_cv_results.png", dpi=250)
 plt.show()
