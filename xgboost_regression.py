@@ -140,6 +140,7 @@ for i in tqdm(range(1200)):
         t1 = time()
         lm.fit(X_train, y_train)
         # feature_imp = pd.DataFrame(sorted(zip(lm.feature_importances_, x_data.columns)), columns=['Value', 'Feature'])
+        # feature_imp["Value"] = feature_imp["Value"].apply(lambda x: x / feature_imp["Value"].sum())
         # plt.figure(figsize=(20, 10))
         # sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
         # plt.title('Relative XGBoost Feature Importance (avg over folds)')
