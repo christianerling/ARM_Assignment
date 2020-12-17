@@ -6,8 +6,11 @@ import lightgbm as lgb
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly
+import plotly.graph_objects as go
 import seaborn as sns
 from bayes_opt import BayesianOptimization
+from plotly.subplots import make_subplots
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
@@ -103,36 +106,36 @@ def bayesion_opt_lgbm(X, y, init_iter=3, n_iters=7, random_state=11, seed=101, n
 # bayesion_opt_lgbm(x_data, y_data, init_iter=10, n_iters=200, random_state=77, seed=101, num_iterations=400)
 # t2 = time()
 # print(f"\n\nExecution Time {timedelta(seconds=t2 - t1)}")
-# data = pd.read_excel("data/lightgbm_bayesian_optimization.xlsx")
-# fig = make_subplots(rows=1, cols=6,
-#                     subplot_titles=["bagging_fraction", "feature_fraction", "max_depth", "min_child_weight",
-#                                     "min_split_gain", "num_leaves"])
-# fig.add_trace(
-#     go.Scatter(x=data["bagging_fraction"], y=data["target"], mode='markers'),
-#     row=1, col=1
-# )
-# fig.add_trace(
-#     go.Scatter(x=data["feature_fraction"], y=data["target"], mode='markers'),
-#     row=1, col=2
-# )
-# fig.add_trace(
-#     go.Scatter(x=data["max_depth"], y=data["target"], mode='markers'),
-#     row=1, col=3
-# )
-# fig.add_trace(
-#     go.Scatter(x=data["min_child_weight"], y=data["target"], mode='markers'),
-#     row=1, col=4
-# )
-# fig.add_trace(
-#     go.Scatter(x=data["min_split_gain"], y=data["target"], mode='markers'),
-#     row=1, col=5
-# )
-# fig.add_trace(
-#     go.Scatter(x=data["num_leaves"], y=data["target"], mode='markers'),
-#     row=1, col=6
-# )
-# fig.update_layout(height=600, width=1500, title_text="Hyperparameter for Target Variable R\u00b2")
-# plotly.offline.plot(fig, filename='data/lightgbm_bayesian_optimization_result.html', auto_open=True)
+data = pd.read_excel("data/lightgbm_bayesian_optimization.xlsx")
+fig = make_subplots(rows=1, cols=6,
+                    subplot_titles=["bagging_fraction", "feature_fraction", "max_depth", "min_child_weight",
+                                    "min_split_gain", "num_leaves"])
+fig.add_trace(
+    go.Scatter(x=data["bagging_fraction"], y=data["target"], mode='markers', name="bagging_fraction"),
+    row=1, col=1
+)
+fig.add_trace(
+    go.Scatter(x=data["feature_fraction"], y=data["target"], mode='markers', name="feature_fraction"),
+    row=1, col=2
+)
+fig.add_trace(
+    go.Scatter(x=data["max_depth"], y=data["target"], mode='markers', name="max_depth"),
+    row=1, col=3
+)
+fig.add_trace(
+    go.Scatter(x=data["min_child_weight"], y=data["target"], mode='markers', name="min_child_weight"),
+    row=1, col=4
+)
+fig.add_trace(
+    go.Scatter(x=data["min_split_gain"], y=data["target"], mode='markers', name="min_split_gain"),
+    row=1, col=5
+)
+fig.add_trace(
+    go.Scatter(x=data["num_leaves"], y=data["target"], mode='markers', name="num_leaves"),
+    row=1, col=6
+)
+fig.update_layout(height=600, width=1500, title_text="Hyperparameter for Target Variable R\u00b2")
+plotly.offline.plot(fig, filename='data/lightgbm_bayesian_optimization_result.html', auto_open=True)
 mean_result = []
 # max_bin=63 add below if device is GPU
 lm = lgb.LGBMRegressor(bagging_fraction=0.8402, feature_fraction=0.4992, max_depth=int(21.48),
@@ -151,12 +154,11 @@ for i in tqdm(range(1200)):
         y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
         t1 = time()
         lm.fit(X_train, y_train)
-        #
         # feature_imp = pd.DataFrame(sorted(zip(lm.feature_importances_, x_data.columns)), columns=['Value', 'Feature'])
-        #
+        # feature_imp["Value"] = feature_imp["Value"].apply(lambda x: x / feature_imp["Value"].sum())
         # plt.figure(figsize=(20, 10))
         # sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
-        # plt.title('LightGBM Features (avg over folds)')
+        # plt.title('Relative LightGBM Feature Importance (avg over folds)')
         # plt.tight_layout()
         # plt.savefig('lgbm_importances-01.png', dpi=200)
         # plt.show()
@@ -178,13 +180,35 @@ pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Executio
 
 predicted = list(chain.from_iterable(predicted))
 true_vals = list(chain.from_iterable(true_vals))
+regression_res_collected = dict()
+
+for counter, true_val in enumerate(true_vals):
+    if true_val in regression_res_collected.keys():
+        regression_res_collected[true_val].append(predicted[counter])
+    else:
+        regression_res_collected.update({true_val: [predicted[counter]]})
+
+regression_res_collected = dict(sorted(regression_res_collected.items()))
+
+for key, value in regression_res_collected.items():
+    regression_res_collected[key] = [min(regression_res_collected[key]), max(regression_res_collected[key])]
+
+max_pred = []
+min_pred = []
+for key, value in regression_res_collected.items():
+    max_pred.append(value[1])
+    min_pred.append(value[0])
 
 fig, ax = plt.subplots()
-ax.scatter(true_vals, predicted, edgecolors=(0, 0, 0))
-ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--', lw=4, label="Real Values")
-ax.set_xlabel("Measured")
-ax.set_ylabel("Predicted")
+real_vals = list(regression_res_collected.keys())
+
+fig, ax = plt.subplots()
+ax.fill_between(real_vals, min_pred, max_pred, alpha=1.0, interpolate=True, color="red", label='Prediction Interval')
+ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], color="blue", linestyle='--', lw=4,
+        label="Ideal Prediction")
+ax.set_xlabel("Real new_deaths_smoothed")
+ax.set_ylabel("Predicted new_deaths_smoothed")
 fig.suptitle('LightGBM Regression', fontsize=16)
-plt.legend(loc="upper right", frameon=False)
+plt.legend(loc="upper left", frameon=False)
 plt.savefig("data/lightgbm_cv_results.png", dpi=250)
 plt.show()

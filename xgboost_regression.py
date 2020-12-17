@@ -4,8 +4,11 @@ from time import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
+import plotly
+import plotly.graph_objects as go
 import xgboost as xgb
+import seaborn as sns
+from plotly.subplots import make_subplots
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
@@ -74,45 +77,50 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # )
 # grid_search_scores_xgboost.to_excel("data/xgboost_grid_search_results.xlsx")
 #
-# grid_search_scores_xgboost = pd.read_excel("data/xgboost_grid_search_results.xlsx")
-# fig = make_subplots(rows=1, cols=8,
-#                     subplot_titles=["subsample", "min_child_weight", "max_depth", "lambda",
-#                                     "gamma", "eta","colsample_bytree","alpha"])
-# fig.add_trace(
-#     go.Box(x=grid_search_scores_xgboost["param_subsample"], y=grid_search_scores_xgboost["mean_score"]),
-#     row=1, col=1
-# )
-# fig.add_trace(
-#     go.Box(x=grid_search_scores_xgboost["param_min_child_weight"], y=grid_search_scores_xgboost["mean_score"]),
-#     row=1, col=2
-# )
-# fig.add_trace(
-#     go.Box(x=grid_search_scores_xgboost["param_max_depth"], y=grid_search_scores_xgboost["mean_score"]),
-#     row=1, col=3
-# )
-# fig.add_trace(
-#     go.Scatter(x=grid_search_scores_xgboost["param_lambda"], y=grid_search_scores_xgboost["mean_score"], mode='markers'),
-#     row=1, col=4
-# )
-# fig.add_trace(
-#     go.Box(x=grid_search_scores_xgboost["param_gamma"], y=grid_search_scores_xgboost["mean_score"]),
-#     row=1, col=5
-# )
-# fig.add_trace(
-#     go.Box(x=grid_search_scores_xgboost["param_eta"], y=grid_search_scores_xgboost["mean_score"]),
-#     row=1, col=6
-# )
-# fig.add_trace(
-#     go.Box(x=grid_search_scores_xgboost["colsample_bytrees"], y=grid_search_scores_xgboost["mean_score"]),
-#     row=1, col=7
-# )
-# fig.add_trace(
-#     go.Box(x=grid_search_scores_xgboost["param_alpha"], y=grid_search_scores_xgboost["mean_score"]),
-#     row=1, col=8
-# )
-#
-# fig.update_layout(height=600, width=2000, title_text="Hyperparameter for Target Variable R\u00b2")
-# plotly.offline.plot(fig, filename='data/xgboost_grid_search_results.html', auto_open=True)
+grid_search_scores_xgboost = pd.read_excel("data/xgboost_grid_search_results.xlsx")
+fig = make_subplots(rows=1, cols=8,
+                    subplot_titles=["subsample", "min_child_weight", "max_depth", "lambda",
+                                    "gamma", "eta", "colsample_bytree", "alpha"])
+fig.add_trace(
+    go.Box(x=grid_search_scores_xgboost["param_subsample"], y=grid_search_scores_xgboost["mean_score"],
+           name="subsample"),
+    row=1, col=1
+)
+fig.add_trace(
+    go.Box(x=grid_search_scores_xgboost["param_min_child_weight"], y=grid_search_scores_xgboost["mean_score"],
+           name="min_child_weight"),
+    row=1, col=2
+)
+fig.add_trace(
+    go.Box(x=grid_search_scores_xgboost["param_max_depth"], y=grid_search_scores_xgboost["mean_score"],
+           name="max_depth"),
+    row=1, col=3
+)
+fig.add_trace(
+    go.Scatter(x=grid_search_scores_xgboost["param_lambda"], y=grid_search_scores_xgboost["mean_score"], mode='markers',
+               name="lambda"),
+    row=1, col=4
+)
+fig.add_trace(
+    go.Box(x=grid_search_scores_xgboost["param_gamma"], y=grid_search_scores_xgboost["mean_score"], name="gamma"),
+    row=1, col=5
+)
+fig.add_trace(
+    go.Box(x=grid_search_scores_xgboost["param_eta"], y=grid_search_scores_xgboost["mean_score"], name="eta"),
+    row=1, col=6
+)
+fig.add_trace(
+    go.Box(x=grid_search_scores_xgboost["colsample_bytrees"], y=grid_search_scores_xgboost["mean_score"],
+           name="colsample_bytree"),
+    row=1, col=7
+)
+fig.add_trace(
+    go.Box(x=grid_search_scores_xgboost["param_alpha"], y=grid_search_scores_xgboost["mean_score"], name="alpha"),
+    row=1, col=8
+)
+
+fig.update_layout(height=600, width=2000, title_text="Hyperparameter for Target Variable R\u00b2")
+plotly.offline.plot(fig, filename='data/xgboost_grid_search_results.html', auto_open=True)
 
 mean_result = []
 lm = xgb.XGBRegressor(predictor="auto", nthread=-1, verbosity=0, subsample=0.9,
@@ -131,12 +139,10 @@ for i in tqdm(range(1200)):
         y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
         t1 = time()
         lm.fit(X_train, y_train)
-        #
         # feature_imp = pd.DataFrame(sorted(zip(lm.feature_importances_, x_data.columns)), columns=['Value', 'Feature'])
-        #
         # plt.figure(figsize=(20, 10))
         # sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
-        # plt.title('XGBoost Features (avg over folds)')
+        # plt.title('Relative XGBoost Feature Importance (avg over folds)')
         # plt.tight_layout()
         # plt.savefig('xgboost_importances-01.png', dpi=200)
         # plt.show()
@@ -159,12 +165,35 @@ pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Executio
 predicted = list(chain.from_iterable(predicted))
 true_vals = list(chain.from_iterable(true_vals))
 
+regression_res_collected = dict()
+
+for counter, true_val in enumerate(true_vals):
+    if true_val in regression_res_collected.keys():
+        regression_res_collected[true_val].append(predicted[counter])
+    else:
+        regression_res_collected.update({true_val: [predicted[counter]]})
+
+regression_res_collected = dict(sorted(regression_res_collected.items()))
+
+for key, value in regression_res_collected.items():
+    regression_res_collected[key] = [min(regression_res_collected[key]), max(regression_res_collected[key])]
+
+max_pred = []
+min_pred = []
+for key, value in regression_res_collected.items():
+    max_pred.append(value[1])
+    min_pred.append(value[0])
+
 fig, ax = plt.subplots()
-ax.scatter(true_vals, predicted, edgecolors=(0, 0, 0))
-ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], 'k--', lw=4, label="Real Values")
-ax.set_xlabel("Measured")
-ax.set_ylabel("Predicted")
+real_vals = list(regression_res_collected.keys())
+# ax.fill(np.concatenate([real_vals, real_vals[::-1]]), np.concatenate([min_pred, max_pred[::-1]]), alpha=.1, fc='b',
+#         ec='None', label='Prediction Interval')
+ax.fill_between(real_vals, min_pred, max_pred, alpha=1.0, interpolate=True, color="red", label='Prediction Interval')
+ax.plot([min(true_vals), max(true_vals)], [min(true_vals), max(true_vals)], color="blue", linestyle='--', lw=4,
+        label="Ideal Prediction")
+ax.set_xlabel("Real new_deaths_smoothed")
+ax.set_ylabel("Predicted new_deaths_smoothed")
 fig.suptitle('XGBoost Regression', fontsize=16)
-plt.legend(loc="upper right", frameon=False)
+plt.legend(loc="upper left", frameon=False)
 plt.savefig("data/xgboost_cv_results.png", dpi=250)
 plt.show()
