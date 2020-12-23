@@ -5,12 +5,12 @@ from time import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from sklearn import linear_model
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
-import seaborn as sns
 
 
 def percentage_error(actual, predicted):
@@ -56,24 +56,25 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 #      "param_alphas": param_alphas}
 # )
 # grid_search_scores_lasso.to_excel("data/lasso_grid_search_results.xlsx")
-
-grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
-
-grid_search_scores_lasso_filtered = grid_search_scores_lasso  # grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
-plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
-         label="LASSO Regression")
-plt.xlabel("Alpha")
-# plt.ylim(0.25, 1.0)
-plt.xlim(0, 1)
-plt.ylabel("Mean R\u00b2 Score")
-plt.legend(loc="upper right", frameon=False)
-plt.savefig("data/lasso_grid_search_results.png", dpi=250)
-plt.show()
+#
+# grid_search_scores_lasso = pd.read_excel("data/lasso_grid_search_results.xlsx")
+#
+# grid_search_scores_lasso_filtered = grid_search_scores_lasso  # grid_search_scores_lasso[(grid_search_scores_lasso["param_alphas"] >= 60)]
+# plt.plot(grid_search_scores_lasso_filtered["param_alphas"], grid_search_scores_lasso_filtered["mean_score"],
+#          label="LASSO Regression")
+# plt.xlabel("Alpha")
+# # plt.ylim(0.25, 1.0)
+# plt.xlim(0, 1)
+# plt.ylabel("Mean R\u00b2 Score")
+# plt.legend(loc="upper right", frameon=False)
+# plt.savefig("data/lasso_grid_search_results.png", dpi=250)
+# plt.show()
 
 lm = linear_model.Lasso(alpha=0.01000050002500125)
 mean_result = []
 predicted = []
 true_vals = []
+feature_imp = dict()
 for i in tqdm(range(1200)):
     cv_result = []
     indices = []
@@ -86,18 +87,15 @@ for i in tqdm(range(1200)):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=ConvergenceWarning)
             lm.fit(X_train, y_train)
-        # coef = pd.Series(lm.coef_, index=x_data.columns)
-        # imp_coef = pd.DataFrame(coef).reset_index()
-        # imp_coef.columns = ["Feature", "Value"]
-        # imp_coef["Value"] = imp_coef["Value"].abs()
-        # imp_coef["Value"] = imp_coef["Value"].apply(lambda x: x / imp_coef["Value"].sum())
-        # imp_coef = imp_coef.sort_values(by="Value", ascending=False)
-        # plt.figure(figsize=(20, 10))
-        # sns.barplot(x="Value", y="Feature", data=imp_coef)
-        # plt.title('Relative LASSO Feature Importance (avg over folds)')
-        # plt.tight_layout()
-        # plt.savefig('lasso_importances-01.png', dpi=200)
-        # plt.show()
+        coeff = np.abs(lm.coef_)
+        rel_func = lambda x: x / np.sum(coeff)
+        coeff = rel_func(coeff)
+
+        for counter, column in enumerate(x_data.columns):
+            if column in feature_imp.keys():
+                feature_imp[column].append(coeff[counter])
+            else:
+                feature_imp.update({column: [coeff[counter]]})
         y_pred = lm.predict(X_test)
         t2 = time()
         predicted.append(y_pred.tolist())
@@ -110,6 +108,19 @@ for i in tqdm(range(1200)):
         cv_result.append([r2, mse, rmse, mae, mape, t2 - t1])
     means = list(np.mean(np.array(cv_result), axis=0))
     mean_result.append(means)
+
+for key, value in feature_imp.items():
+    feature_imp[key] = np.mean(feature_imp[key])
+imp_coef = pd.Series(feature_imp)
+imp_coef = pd.DataFrame(imp_coef).reset_index()
+imp_coef.columns = ["Feature", "Value"]
+imp_coef = imp_coef.sort_values(by="Value", ascending=False)
+plt.figure(figsize=(20, 10))
+sns.barplot(x="Value", y="Feature", data=imp_coef)
+plt.title('Relative LASSO Feature Importance (mean over folds)')
+plt.tight_layout()
+plt.savefig('lasso_importances-01.png', dpi=200)
+plt.show()
 
 pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
     "data/lasso_cv_run.xlsx")

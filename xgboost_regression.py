@@ -77,50 +77,50 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # )
 # grid_search_scores_xgboost.to_excel("data/xgboost_grid_search_results.xlsx")
 #
-grid_search_scores_xgboost = pd.read_excel("data/xgboost_grid_search_results.xlsx")
-fig = make_subplots(rows=1, cols=8,
-                    subplot_titles=["subsample", "min_child_weight", "max_depth", "lambda",
-                                    "gamma", "eta", "colsample_bytree", "alpha"])
-fig.add_trace(
-    go.Box(x=grid_search_scores_xgboost["param_subsample"], y=grid_search_scores_xgboost["mean_score"],
-           name="subsample"),
-    row=1, col=1
-)
-fig.add_trace(
-    go.Box(x=grid_search_scores_xgboost["param_min_child_weight"], y=grid_search_scores_xgboost["mean_score"],
-           name="min_child_weight"),
-    row=1, col=2
-)
-fig.add_trace(
-    go.Box(x=grid_search_scores_xgboost["param_max_depth"], y=grid_search_scores_xgboost["mean_score"],
-           name="max_depth"),
-    row=1, col=3
-)
-fig.add_trace(
-    go.Scatter(x=grid_search_scores_xgboost["param_lambda"], y=grid_search_scores_xgboost["mean_score"], mode='markers',
-               name="lambda"),
-    row=1, col=4
-)
-fig.add_trace(
-    go.Box(x=grid_search_scores_xgboost["param_gamma"], y=grid_search_scores_xgboost["mean_score"], name="gamma"),
-    row=1, col=5
-)
-fig.add_trace(
-    go.Box(x=grid_search_scores_xgboost["param_eta"], y=grid_search_scores_xgboost["mean_score"], name="eta"),
-    row=1, col=6
-)
-fig.add_trace(
-    go.Box(x=grid_search_scores_xgboost["colsample_bytrees"], y=grid_search_scores_xgboost["mean_score"],
-           name="colsample_bytree"),
-    row=1, col=7
-)
-fig.add_trace(
-    go.Box(x=grid_search_scores_xgboost["param_alpha"], y=grid_search_scores_xgboost["mean_score"], name="alpha"),
-    row=1, col=8
-)
-
-fig.update_layout(height=600, width=2000, title_text="Hyperparameter for Target Variable R\u00b2")
-plotly.offline.plot(fig, filename='data/xgboost_grid_search_results.html', auto_open=True)
+# grid_search_scores_xgboost = pd.read_excel("data/xgboost_grid_search_results.xlsx")
+# fig = make_subplots(rows=1, cols=8,
+#                     subplot_titles=["subsample", "min_child_weight", "max_depth", "lambda",
+#                                     "gamma", "eta", "colsample_bytree", "alpha"])
+# fig.add_trace(
+#     go.Box(x=grid_search_scores_xgboost["param_subsample"], y=grid_search_scores_xgboost["mean_score"],
+#            name="subsample"),
+#     row=1, col=1
+# )
+# fig.add_trace(
+#     go.Box(x=grid_search_scores_xgboost["param_min_child_weight"], y=grid_search_scores_xgboost["mean_score"],
+#            name="min_child_weight"),
+#     row=1, col=2
+# )
+# fig.add_trace(
+#     go.Box(x=grid_search_scores_xgboost["param_max_depth"], y=grid_search_scores_xgboost["mean_score"],
+#            name="max_depth"),
+#     row=1, col=3
+# )
+# fig.add_trace(
+#     go.Scatter(x=grid_search_scores_xgboost["param_lambda"], y=grid_search_scores_xgboost["mean_score"], mode='markers',
+#                name="lambda"),
+#     row=1, col=4
+# )
+# fig.add_trace(
+#     go.Box(x=grid_search_scores_xgboost["param_gamma"], y=grid_search_scores_xgboost["mean_score"], name="gamma"),
+#     row=1, col=5
+# )
+# fig.add_trace(
+#     go.Box(x=grid_search_scores_xgboost["param_eta"], y=grid_search_scores_xgboost["mean_score"], name="eta"),
+#     row=1, col=6
+# )
+# fig.add_trace(
+#     go.Box(x=grid_search_scores_xgboost["colsample_bytrees"], y=grid_search_scores_xgboost["mean_score"],
+#            name="colsample_bytree"),
+#     row=1, col=7
+# )
+# fig.add_trace(
+#     go.Box(x=grid_search_scores_xgboost["param_alpha"], y=grid_search_scores_xgboost["mean_score"], name="alpha"),
+#     row=1, col=8
+# )
+#
+# fig.update_layout(height=600, width=2000, title_text="Hyperparameter for Target Variable R\u00b2")
+# plotly.offline.plot(fig, filename='data/xgboost_grid_search_results.html', auto_open=True)
 
 mean_result = []
 lm = xgb.XGBRegressor(predictor="auto", nthread=-1, verbosity=0, subsample=0.9,
@@ -129,6 +129,7 @@ lm = xgb.XGBRegressor(predictor="auto", nthread=-1, verbosity=0, subsample=0.9,
 
 predicted = []
 true_vals = []
+feature_imp = dict()
 for i in tqdm(range(1200)):
     cv_result = []
     indices = []
@@ -139,14 +140,17 @@ for i in tqdm(range(1200)):
         y_train, y_test = y_data.iloc[train_index], y_data.iloc[test_index]
         t1 = time()
         lm.fit(X_train, y_train)
-        # feature_imp = pd.DataFrame(sorted(zip(lm.feature_importances_, x_data.columns)), columns=['Value', 'Feature'])
-        # feature_imp["Value"] = feature_imp["Value"].apply(lambda x: x / feature_imp["Value"].sum())
-        # plt.figure(figsize=(20, 10))
-        # sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
-        # plt.title('Relative XGBoost Feature Importance (avg over folds)')
-        # plt.tight_layout()
-        # plt.savefig('xgboost_importances-01.png', dpi=200)
-        # plt.show()
+
+        coeff = np.abs(lm.feature_importances_)
+        rel_func = lambda x: x / np.sum(coeff)
+        coeff = rel_func(coeff)
+
+        for counter, column in enumerate(x_data.columns):
+            if column in feature_imp.keys():
+                feature_imp[column].append(coeff[counter])
+            else:
+                feature_imp.update({column: [coeff[counter]]})
+
         y_pred = lm.predict(X_test)
         t2 = time()
         predicted.append(y_pred.tolist())
@@ -159,6 +163,19 @@ for i in tqdm(range(1200)):
         cv_result.append([r2, mse, rmse, mae, mape, t2 - t1])
     means = list(np.mean(np.array(cv_result), axis=0))
     mean_result.append(means)
+
+for key, value in feature_imp.items():
+    feature_imp[key] = np.mean(feature_imp[key])
+imp_coef = pd.Series(feature_imp)
+imp_coef = pd.DataFrame(imp_coef).reset_index()
+imp_coef.columns = ["Feature", "Value"]
+imp_coef = imp_coef.sort_values(by="Value", ascending=False)
+plt.figure(figsize=(20, 10))
+sns.barplot(x="Value", y="Feature", data=imp_coef)
+plt.title('Relative XGBoost Feature Importance (mean over folds)')
+plt.tight_layout()
+plt.savefig('xgboost_importances-01.png', dpi=200)
+plt.show()
 
 pd.DataFrame(mean_result, columns=["R2", "MSE", "RMSE", "MAE", "MAPE", "Execution Time"]).to_excel(
     "data/xgboost_cv_run.xlsx")
