@@ -1,4 +1,5 @@
 import warnings
+from datetime import timedelta
 from itertools import chain
 from time import time
 
@@ -138,8 +139,8 @@ def bayesion_opt_lgbm(X, y, init_iter=3, n_iters=7, random_state=11, seed=101, n
 # plotly.offline.plot(fig, filename='data/lightgbm_bayesian_optimization_result.html', auto_open=True)
 mean_result = []
 # max_bin=63 add below if device is GPU
-lm = lgb.LGBMRegressor(bagging_fraction=0.8402, feature_fraction=0.4992, max_depth=int(21.48),
-                       min_child_weight=17.16, min_split_gain=0.01813, num_leaves=int(95.65),
+lm = lgb.LGBMRegressor(bagging_fraction=0.9133, feature_fraction=0.5429, max_depth=int(24.99),
+                       min_child_weight=11.66, min_split_gain=0.008908, num_leaves=int(84.88),
                        application="regression", num_iterations=200, learning_rate=0.05, metric='lgb_r2_score',
                        device="cpu", n_jobs=-1, gpu_use_dp=False, categorical_column=24)
 predicted = []

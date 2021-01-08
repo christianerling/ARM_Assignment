@@ -4,11 +4,8 @@ from time import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly
-import plotly.graph_objects as go
-import xgboost as xgb
 import seaborn as sns
-from plotly.subplots import make_subplots
+import xgboost as xgb
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
@@ -123,9 +120,9 @@ y_data = data_preprocessed.loc[:, data_preprocessed.columns == "new_deaths_smoot
 # plotly.offline.plot(fig, filename='data/xgboost_grid_search_results.html', auto_open=True)
 
 mean_result = []
-lm = xgb.XGBRegressor(predictor="auto", nthread=-1, verbosity=0, subsample=0.9,
+lm = xgb.XGBRegressor(predictor="auto", nthread=-1, verbosity=0, subsample=0.6,
                       min_child_weight=12,
-                      max_depth=5, reg_lambda=0.07, gamma=0.3, eta=0.1, colsample_bytree=0.8, reg_alpha=0.07)
+                      max_depth=15, reg_lambda=0.04, gamma=0.4, eta=0.1, colsample_bytree=0.7, reg_alpha=1.0)
 
 predicted = []
 true_vals = []
