@@ -91,7 +91,6 @@ t2 = time()
 # Delete Rows with Poverty Measurement over 1
 covid_19_values_imputed.to_excel("data/owi-covid-faulty_values_imputed.xlsx")
 covid_19_values_imputed = covid_19_values_imputed[covid_19_values_imputed["extreme_poverty"] < 1]
-#TODO delete values below zero for new_cases_smoothed and new_cases
 covid_19_values_imputed = covid_19_values_imputed[covid_19_values_imputed["new_cases"] >= 0]
 covid_19_values_imputed = covid_19_values_imputed[covid_19_values_imputed["new_cases_smoothed"] >= 0]
 print()
