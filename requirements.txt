@@ -1,0 +1,12 @@
+pandas
+nltk
+missingpy
+scikit-learn
+matplotlib
+numpy
+seaborn
+tqdm
+xgboost
+bayesian-optimization
+plotly
+lightgbm
